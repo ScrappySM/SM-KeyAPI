@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ScrappySM/CarbonLauncher/refs/heads/main/schema.json",
+
+  "name": "SM-KeyAPI",
+  "url": "https://github.com/ScrappySM/SM-KeyAPI",
+
+  "authors": [
+    "ScrappySM"
+  ],
+
+  "description": "No description yet, needs to be filled in"
+}

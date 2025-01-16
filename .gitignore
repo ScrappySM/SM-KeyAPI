@@ -1,3 +1,4 @@
 .vs
 x64
 *.vcxproj.*
+vcpkg_installed

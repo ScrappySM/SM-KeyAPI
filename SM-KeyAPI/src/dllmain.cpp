@@ -1,3 +1,16 @@
+/// How this mod works:
+/// - We hook the loadLuaEnv function, which is called when the game loads the Lua environment.
+/// - We inject a function into the Lua environment that allows us to check the state of a key (implemented in C++ as `keyapi_getkeystate`).
+///
+/// - In the `keyapi_getkeystate` function, we check if the ScrapMechanic window is the active window.
+/// - If it is, we check the state of the key and return it to the Lua environment.
+///
+/// How to update the mod (assumes IDA):
+/// - Go the to names subview (Shift + F4)
+/// - Search for `luaopen_base`
+/// - XRef to the function
+/// - The function you arrive at is the loadLuaEnv function, update the offset in `include/sm/offsets.h`
+
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>

@@ -5,8 +5,8 @@
   "url": "https://github.com/ScrappySM/SM-KeyAPI",
 
   "authors": [
-    "ScrappySM"
+    "BenMcAvoy"
   ],
 
-  "description": "No description yet, needs to be filled in"
+  "description": "Extends the SM Lua API to query any keyboard input."
 }

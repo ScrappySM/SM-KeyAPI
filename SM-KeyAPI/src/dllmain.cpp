@@ -20,7 +20,10 @@
 #include <polyhook2/IHook.hpp>
 
 #include <sm/offsets.h>
-#include <sm/lua.h>
+
+#include <carbon/lua/lua.hpp>
+#include <carbon/contraption.h>
+#include <carbon/tools.h>
 
 #include "utils.h"
 
@@ -44,20 +47,18 @@ NOINLINE uint64_t __cdecl hkLoadLuaEnv(uint64_t* luaVM, uint64_t** loadFuncs, in
 	auto oRes = PLH::FnCast(hkLoadLuaEnvTramp, &hkLoadLuaEnv)(luaVM, loadFuncs, envFlag);
 	lua_State* L = reinterpret_cast<lua_State*>(*luaVM);
 
-	if (!hasAllLuaFunctions())
-		return oRes;
+	INFO("Injecting keyapi into Lua environment...");
 
 	if (!oRes && L) {
-		const int loadRes = luaL_loadstring(L, "unsafe_env.sm.keyapi_injected = true");
-		if (!loadRes)
-			lua_pcall(L, 0, 0, 0);
+		if (luaL_dostring(L, "unsafe_env.sm.keyapi_injected = true") != 0) {
+			std::cout << "Failed to inject keyapi into Lua environment!" << std::endl;
+			return oRes;
+		}
 
 		lua_getglobal(L, "unsafe_env");
 		lua_getfield(L, -1, "sm");
-		lua_pushcclosure(L, (lua_CFunction*)keyapi_getkeystate, 0);
+		lua_pushcclosure(L, keyapi_getkeystate, 0);
 		lua_setfield(L, -2, "getKeyState");
-
-		return loadRes;
 	}
 
 	return oRes;
@@ -68,16 +69,23 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved) {
 		DisableThreadLibraryCalls(hModule);
 		std::cout << "DLL_PROCESS_ATTACH" << std::endl;
 
+		auto contraption = Carbon::SM::Contraption::GetInstance();
+		while (!contraption || contraption->gameState <= Carbon::SM::GameStateType::Null || contraption->gameState >= Carbon::SM::GameStateType::WorldBuilder || contraption->gameState == Carbon::SM::GameStateType::Load) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			contraption = Carbon::SM::Contraption::GetInstance();
+		}
+
 		detour.emplace((uint64_t)SM::Offsets::Rebased::loadLuaEnv, (uint64_t)&hkLoadLuaEnv, &hkLoadLuaEnvTramp);
 		detour.value().hook();
-		std::cout << "loadLuaEnv " << std::hex << (uint64_t)SM::Offsets::Rebased::loadLuaEnv << " hooked!" << std::endl;
+
+		INFO("KeyAPI injected into Lua environment!");
 	}
 
 	if (dwReason == DLL_PROCESS_DETACH) {
 		std::cout << "DLL_PROCESS_DETACH" << std::endl;
 
 		detour.value().unHook();
-		std::cout << "loadLuaEnv " << std::hex << (uint64_t)SM::Offsets::Rebased::loadLuaEnv << " unhooked!" << std::endl;
+		INFO("KeyAPI removed from Lua environment!");
 	}
 
 	return TRUE;

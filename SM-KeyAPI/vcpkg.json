@@ -1,5 +1,6 @@
 {
   "dependencies": [
-    "polyhook2"
+    "polyhook2",
+    "fmt"
   ]
 }

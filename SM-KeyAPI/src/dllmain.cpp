@@ -40,52 +40,30 @@ static int keyapi_getkeystate(lua_State* L) {
 	return 1;
 }
 
-static std::optional<PLH::NatDetour> detour = std::nullopt;
-static uint64_t hkLoadLuaEnvTramp = NULL;
-// __int64 __fastcall loadLuaEnv(__int64 *luaVM, _QWORD **loadFuncs, int envFlag)
-NOINLINE uint64_t __cdecl hkLoadLuaEnv(uint64_t* luaVM, uint64_t** loadFuncs, int envFlag) {
-	auto oRes = PLH::FnCast(hkLoadLuaEnvTramp, &hkLoadLuaEnv)(luaVM, loadFuncs, envFlag);
-	lua_State* L = reinterpret_cast<lua_State*>(*luaVM);
-
-	INFO("Injecting keyapi into Lua environment...");
-
-	if (!oRes && L) {
-		if (luaL_dostring(L, "unsafe_env.sm.keyapi_injected = true") != 0) {
-			std::cout << "Failed to inject keyapi into Lua environment!" << std::endl;
-			return oRes;
-		}
-
-		lua_getglobal(L, "unsafe_env");
-		lua_getfield(L, -1, "sm");
-		lua_pushcclosure(L, keyapi_getkeystate, 0);
-		lua_setfield(L, -2, "getKeyState");
-	}
-
-	return oRes;
-}
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved) {
 	if (dwReason == DLL_PROCESS_ATTACH) {
 		DisableThreadLibraryCalls(hModule);
-		std::cout << "DLL_PROCESS_ATTACH" << std::endl;
 
-		auto contraption = Carbon::SM::Contraption::GetInstance();
-		while (!contraption || contraption->gameState <= Carbon::SM::GameStateType::Null || contraption->gameState >= Carbon::SM::GameStateType::WorldBuilder || contraption->gameState == Carbon::SM::GameStateType::Load) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			contraption = Carbon::SM::Contraption::GetInstance();
-		}
+		LuaExecutor::GetInstance()->OnInitialize([](lua_State* L) {
+			if (luaL_dostring(L, "unsafe_env.sm.keyapi_injected = true") != LUA_OK) {
+				INFO("Failed to create unsafe_env.sm!");
+				return;
+			}
 
-		detour.emplace((uint64_t)SM::Offsets::Rebased::loadLuaEnv, (uint64_t)&hkLoadLuaEnv, &hkLoadLuaEnvTramp);
-		detour.value().hook();
+			lua_getglobal(L, "unsafe_env");
+			lua_getfield(L, -1, "sm");
+			lua_pushcclosure(L, keyapi_getkeystate, 0);
+			lua_setfield(L, -2, "getKeyState");
+			lua_pop(L, 2);
 
-		INFO("KeyAPI injected into Lua environment!");
+			INFO("Injected SM-KeyAPI into Lua environment!");
+			}, true);
+
+		INFO("SM-KeyAPI loaded!");
 	}
 
 	if (dwReason == DLL_PROCESS_DETACH) {
-		std::cout << "DLL_PROCESS_DETACH" << std::endl;
-
-		detour.value().unHook();
-		INFO("KeyAPI removed from Lua environment!");
+		INFO("SM-KeyAPI unloaded!");
 	}
 
 	return TRUE;

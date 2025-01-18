@@ -18,5 +18,9 @@
 		type(const type&) = delete; \
 	public: \
 		[[nodiscard]] static type* GetInstance() { \
-			return *reinterpret_cast<type**>(Carbon::Offsets::Rebased::type); \
+			auto instance = *reinterpret_cast<type**>(Carbon::Offsets::Rebased::type); \
+			while (!instance) { \
+				instance = *reinterpret_cast<type**>(Carbon::Offsets::Rebased::type); \
+			} \
+			return instance; \
 		}

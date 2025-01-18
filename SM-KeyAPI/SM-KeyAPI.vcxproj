@@ -166,6 +166,7 @@
     <ClInclude Include="include\utils.h" />
     <ClInclude Include="vendor\include\carbon\console.h" />
     <ClInclude Include="vendor\include\carbon\contraption.h" />
+    <ClInclude Include="vendor\include\carbon\lua\executor.h" />
     <ClInclude Include="vendor\include\carbon\lua\lauxlib.h" />
     <ClInclude Include="vendor\include\carbon\lua\lua.h" />
     <ClInclude Include="vendor\include\carbon\lua\lua.hpp" />
